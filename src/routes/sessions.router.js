@@ -1,10 +1,9 @@
 import express from "express";
-import UserManager from "../dao/controllers_mongo/userManager.js";
 import passport from "passport";
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
+import { userService } from "../repositories/index.js";
 
-const um = new UserManager();
 const router = express.Router();
 
 router.post("/register", async (req, res, next) => {
@@ -53,9 +52,9 @@ router.post("/login", async (req, res, next) => {
 
 router.post("/passwordRestore", async (req, res) => {
   let { email, password, confirm } = req.body;
-  const user = await um.getUserByEmail(email);
+  const user = await userService.getByEmail(email);
   if (user && password && confirm && password === confirm) {
-    await um.updatePassword(email, password);
+    await userService.updatePassword(email, password);
     res.redirect("/login");
   }
 });
@@ -88,9 +87,12 @@ router.get("/current", async (req, res) => {
   let user;
   if (req.signedCookies.jwt) {
     const userId = jwt.verify(req.signedCookies.jwt, config.privateKey).id;
-    user = await um.getUserById(userId);
-  }
-  if (!req.signedCookies.jwt && !req.session.user) {
+    if (userId === 1) {
+      user = config.userAdmin;
+    } else {
+      user = await userService.getById(userId);
+    }
+  } else {
     res.status(400).json("Nadie logueado");
   }
   res.status(200).json(user);

@@ -43,6 +43,14 @@ class ProductManager {
     }
   };
 
+  getProductById = async (productId) => {
+    try {
+      return await ProductSchema.findById(productId);
+    } catch (error) {
+      throw new Error(`Error al encontrar el producto`);
+    }
+  };
+
   addProduct = async (product) => {
     if (!product) {
       throw new Error(`Debe tener todos los campos completos`);
@@ -55,14 +63,6 @@ class ProductManager {
       return new ProductSchema(product).save();
     } catch (error) {
       throw new Error(`Error al agregar producto: ${error.message}`);
-    }
-  };
-
-  getProductById = async (productId) => {
-    try {
-      return await ProductSchema.findById(productId);
-    } catch (error) {
-      throw new Error(`Error al encontrar el producto`);
     }
   };
 

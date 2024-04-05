@@ -6,7 +6,6 @@ import jwt from "jsonwebtoken";
 import userSchema from "../dao/models/user.schema.js";
 import config from "../config/config.js";
 import { port } from "../app.js";
-import { userAdmin } from "../config/passport.config.js";
 
 const router = express.Router();
 const pm = new ProductManager();
@@ -62,7 +61,7 @@ router.get("/products", async (req, res) => {
   if (req.signedCookies.jwt) {
     const userId = jwt.verify(req.signedCookies.jwt, config.privateKey).id;
     if (userId === 1) {
-      user = userAdmin;
+      user = config.userAdmin;
       isAdmin = true;
     } else {
       user = await userSchema.findById(userId);
@@ -117,7 +116,7 @@ router.get("/profile", async (req, res) => {
   let user, isAdmin;
   const userId = jwt.verify(req.signedCookies.jwt, config.privateKey).id;
   if (userId === 1) {
-    user = userAdmin;
+    user = config.userAdmin;
     isAdmin = true;
   } else {
     user = await userSchema.findById(userId);

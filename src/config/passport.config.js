@@ -1,25 +1,14 @@
 import passport from "passport";
 import { Strategy } from "passport-local";
 import StrategyGitHub from "passport-github2";
-import { Strategy as JwtStrategy, ExtractJwt } from "passport-jwt";
-import userManager from "../dao/controllers_mongo/userManager.js";
+import { Strategy as JwtStrategy } from "passport-jwt";
 import cartManager from "../dao/controllers_mongo/cartsManager.js";
 import jwt from "jsonwebtoken";
 import config from "./config.js";
 import { port } from "../app.js";
-import UsersDTO from "../dao/dto/users.dto.js";
+import { userService } from "../repositories/index.js";
 
-const um = new userManager();
 const cm = new cartManager();
-export const userAdmin = {
-  _id: 1,
-  first_name: config.adminFirstName,
-  last_name: config.adminLastName,
-  email: config.adminEmail,
-  password: config.adminPassword,
-  age: 0,
-  role: "admin",
-};
 
 passport.use(
   "jwt",
@@ -36,7 +25,7 @@ passport.use(
     },
     async (jwt_payload, done) => {
       try {
-        const user = await um.getUserById(jwt_payload.sub);
+        const user = await userService.getById(jwt_payload.sub);
         if (!user) {
           return done(null, false);
         }
@@ -47,7 +36,6 @@ passport.use(
     }
   )
 );
-
 export const requireJwtAuth = passport.authenticate("jwt", { session: false });
 export const generateToken = (user) => {
   let token = jwt.sign({ id: user._id }, config.privateKey, { expiresIn: "24h" });
@@ -60,11 +48,14 @@ passport.use(
     { usernameField: "email", passwordField: "password" },
     async (username, password, done) => {
       try {
-        if (username === userAdmin.email && password === userAdmin.password) {
-          const token = generateToken(userAdmin);
-          return done(null, { user: userAdmin, token });
+        if (
+          username === config.userAdmin.email &&
+          password === config.userAdmin.password
+        ) {
+          const token = generateToken(config.userAdmin);
+          return done(null, { user: config.userAdmin, token });
         }
-        const user = await um.getUserByCreds(username, password);
+        const user = await userService.getByCreds(username, password);
         if (!user)
           return done(null, false, { message: "Contraseña o usuario incorrecto" });
         const token = generateToken(user);
@@ -83,7 +74,7 @@ const initializePassport = () => {
       { passReqToCallback: true, usernameField: "email", passwordField: "password" },
       async (req, username, password, done) => {
         const { confirm, first_name, last_name, age } = req.body;
-        let emailUsed = await um.getUserByEmail(username);
+        let emailUsed = await userService.getByEmail(username);
         if (emailUsed) {
           return done("Ya existe un usario con este correo electrónico", false);
         }
@@ -91,6 +82,7 @@ const initializePassport = () => {
           return done("Las contraseñas no coinciden", false);
         }
         const newCart = await cm.addCart();
+
         const user = {
           first_name,
           last_name,
@@ -99,9 +91,9 @@ const initializePassport = () => {
           password,
           cart: newCart[0]._id,
         };
-        await um.addUser(user);
-        let addUser = await um.getUserByEmail(user.email);
-        const token = generateToken(user);
+        await userService.add(user);
+        let addUser = await userService.getByEmail(user.email);
+        const token = generateToken(addUser);
         return done(null, { user: addUser, token });
       }
     )
@@ -117,22 +109,19 @@ const initializePassport = () => {
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
-          const user = await um.getUserByEmail(profile._json.email);
-          const token = generateToken(user);
+          const user = await userService.getByEmail(profile._json.email);
           if (!user) {
             const newCart = await cm.addCart();
             let newUser = {
               first_name: profile._json.name,
-              last_name: "",
               email: profile._json.email,
-              age: "",
-              password: "",
               cart: newCart[0]._id,
             };
-            let result = await um.addUser(newUser);
+            let result = await userService.add(newUser);
             const token = generateToken(result);
             done(null, { user: result, token });
           } else {
+            const token = generateToken(user);
             done(null, { user, token });
           }
         } catch (error) {
@@ -149,10 +138,10 @@ const initializePassport = () => {
   passport.deserializeUser(async (id, done) => {
     let user;
     if (id === 1) {
-      user = userAdmin;
+      user = config.userAdmin;
     } else {
       try {
-        user = await um.getUserById(id);
+        user = await userService.getById(id);
         done(null, user);
       } catch (error) {
         done(error, false);
