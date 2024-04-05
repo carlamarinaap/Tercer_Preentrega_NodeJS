@@ -11,7 +11,7 @@ class UserManager {
     }
   };
 
-  getUser = async (email) => {
+  getUserByEmail = async (email) => {
     try {
       const user = await UserSchema.findOne({ email });
       if (user) {

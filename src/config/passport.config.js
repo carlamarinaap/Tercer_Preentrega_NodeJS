@@ -83,7 +83,7 @@ const initializePassport = () => {
       { passReqToCallback: true, usernameField: "email", passwordField: "password" },
       async (req, username, password, done) => {
         const { confirm, first_name, last_name, age } = req.body;
-        let emailUsed = await um.getUser(username);
+        let emailUsed = await um.getUserByEmail(username);
         if (emailUsed) {
           return done("Ya existe un usario con este correo electrónico", false);
         }
@@ -100,7 +100,7 @@ const initializePassport = () => {
           cart: newCart[0]._id,
         };
         await um.addUser(user);
-        let addUser = await um.getUser(user.email);
+        let addUser = await um.getUserByEmail(user.email);
         const token = generateToken(user);
         return done(null, { user: addUser, token });
       }
@@ -117,7 +117,7 @@ const initializePassport = () => {
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
-          const user = await um.getUser(profile._json.email);
+          const user = await um.getUserByEmail(profile._json.email);
           const token = generateToken(user);
           if (!user) {
             const newCart = await cm.addCart();
