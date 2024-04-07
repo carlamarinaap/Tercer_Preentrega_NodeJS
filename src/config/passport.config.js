@@ -2,7 +2,7 @@ import passport from "passport";
 import { Strategy } from "passport-local";
 import StrategyGitHub from "passport-github2";
 import { Strategy as JwtStrategy } from "passport-jwt";
-import cartManager from "../dao/controllers_mongo/cartsManager.js";
+import cartManager from "../dao/manager_mongo/cartsManager.js";
 import jwt from "jsonwebtoken";
 import config from "./config.js";
 import { port } from "../app.js";

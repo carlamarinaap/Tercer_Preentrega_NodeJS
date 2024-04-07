@@ -3,6 +3,7 @@ export default class UserRepository {
   constructor(dao) {
     this.dao = dao;
   }
+
   getById = async (id) => {
     return await this.dao.getUserById(id);
   };

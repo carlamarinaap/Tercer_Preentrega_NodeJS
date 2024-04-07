@@ -1,7 +1,7 @@
-/* --------------CAPA DE NEGOCIO---------------- */
-
 import CartSchema from "../models/cart.schema.js";
-import ProductSchema from "../models/product.schema.js";
+import express from "express";
+
+const router = express.Router();
 
 class CartsManager {
   getCarts = async () => {
@@ -27,21 +27,11 @@ class CartsManager {
         model: "Products",
       });
     } catch (error) {
-      throw new Error(`Error al encontrar el carrito`);
+      throw new Error(`Error al encontrar el carrito ${error.message}`);
     }
   };
 
   updateCart = async (cartId, productId) => {
-    try {
-      await CartSchema.findById(cartId);
-    } catch (error) {
-      throw new Error(`No se encontró el carrito a actualizar`);
-    }
-    try {
-      await ProductSchema.findById(productId);
-    } catch (error) {
-      throw new Error(`No se encontró el producto a agregar`);
-    }
     try {
       const update = await CartSchema.findOneAndUpdate(
         { _id: cartId, "products.product": productId },
@@ -56,7 +46,7 @@ class CartsManager {
         });
       }
     } catch (error) {
-      throw new Error(error.message);
+      throw new Error(`Error al actualizar el carrito: ${error.message}`);
     }
   };
 
@@ -68,17 +58,19 @@ class CartsManager {
         { new: true }
       );
     } catch (error) {
-      throw new Error(error.message);
+      throw new Error(
+        `Error al actualizar la cantidad de productos en el carrito: ${error.message}`
+      );
     }
   };
 
   updateProductsInCart = async (cartId, allProducts) => {
     try {
-      const cart = await CartSchema.findByIdAndUpdate(cartId, {
+      await CartSchema.findByIdAndUpdate(cartId, {
         $set: { products: allProducts },
       });
     } catch (error) {
-      throw new Error(`Hubo un error actualizando el carrito:${error.message}`);
+      throw new Error(`Hubo un error actualizando el carrito: ${error.message}`);
     }
   };
 
@@ -94,7 +86,7 @@ class CartsManager {
         await cart.save();
       }
     } catch (error) {
-      throw new Error(error.message);
+      throw new Error(`Error al eliminar el producto del carrito ${error.message}`);
     }
   };
 
@@ -102,7 +94,7 @@ class CartsManager {
     try {
       await CartSchema.updateOne({ _id: cartId }, { $set: { products: [] } });
     } catch (error) {
-      throw new Error(`Error al eliminar los productos del carrito`);
+      throw new Error(`Error al eliminar los productos del carrito ${error.message}`);
     }
   };
 }

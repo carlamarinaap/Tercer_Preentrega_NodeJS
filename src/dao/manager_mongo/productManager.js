@@ -1,11 +1,12 @@
-/* --------------CAPA DE NEGOCIO---------------- */
-
 import { port } from "../../app.js";
 import ProductSchema from "../models/product.schema.js";
 
 class ProductManager {
-  getProducts = async (limit = 10, page = 1, sort, category, stock) => {
+  getProducts = async (data) => {
     try {
+      let { limit, page, sort, category, stock } = data;
+      limit ? limit : (limit = 10);
+      page ? page : (page = 1);
       let query = {};
       if (category && stock) {
         query = { $and: [{ category: category }, { stock: { $gt: 0 } }] };

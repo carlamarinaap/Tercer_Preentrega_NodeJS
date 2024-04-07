@@ -3,7 +3,7 @@ export default class ProductDTO {
     (this.title = product.title),
       (this.description = product.description),
       (this.price = product.price),
-      (this.thumbnails = []),
+      (this.thumbnails = product.thumbnails ? product.thumbnails : []),
       (this.code = product.code),
       (this.stock = product.stock),
       (this.category = product.category),

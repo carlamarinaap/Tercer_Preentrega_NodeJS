@@ -17,13 +17,13 @@ import session from "express-session";
 import cookieParser from "cookie-parser";
 
 // Managers
-import ProductManager from "./dao/controllers_mongo/productManager.js";
-import MessageManager from "./dao/controllers_mongo/messageManager.js";
+import ProductManager from "./dao/manager_mongo/productManager.js";
+import MessageManager from "./dao/manager_mongo/messageManager.js";
 
 //Routes
 import routerProducts from "./routes/products.router.js";
 import routerCarts from "./routes/carts.router.js";
-import routerSession from "./routes/sessions.router.js";
+import routerSession from "./routes/user.router.js";
 import routerViews from "./routes/views.router.js";
 
 import { __dirname } from "./utils.js";
@@ -31,6 +31,7 @@ import initializePassport from "./config/passport.config.js";
 import config from "./config/config.js";
 import { Command } from "commander";
 import ProductDTO from "./dao/dto/products.dto.js";
+import { productService } from "./repositories/index.js";
 
 const program = new Command();
 program
@@ -86,11 +87,17 @@ const mm = new MessageManager();
 socketServer.on("connection", (socket) => {
   console.log("Nuevo cliente conectado");
 
-  socket.on("newProduct", async (data) => {
-    const product = new ProductDTO(data);
-    await pm.addProduct(product);
-    const products = await pm.getProducts();
-    const allProducts = await pm.getProducts(products.totalDocs);
+  socket.on("newProduct", async (product) => {
+    await productService.add(product);
+    const products = await productService.get({});
+    const allProducts = await productService.get({ limit: products.totalDocs });
+    socketServer.emit("card", allProducts);
+  });
+
+  socket.on("deleteProduct", async (prodId) => {
+    await pm.deleteProduct(prodId);
+    const products = await productService.get({});
+    const allProducts = await productService.get({ limit: products.totalDocs });
     socketServer.emit("card", allProducts);
   });
 
@@ -107,12 +114,5 @@ socketServer.on("connection", (socket) => {
     await mm.clearChat();
     const messages = await mm.getMessages();
     socketServer.emit("chat", messages);
-  });
-
-  socket.on("deleteProduct", async (prodId) => {
-    await pm.deleteProduct(prodId);
-    const products = await pm.getProducts();
-    const allProducts = await pm.getProducts(products.totalDocs);
-    socketServer.emit("card", allProducts);
   });
 });

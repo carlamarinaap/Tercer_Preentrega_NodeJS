@@ -1,13 +1,11 @@
 import ProductDTO from "../dao/dto/products.dto.js";
-import ProductManager from "../dao/controllers_mongo/productManager.js";
 
 export default class ProductRepository {
   constructor(dao) {
     this.dao = dao;
   }
   get = async (data) => {
-    const { limit, page, sort, category, stock } = data;
-    return await this.dao.getProducts(limit, page, sort, category, stock);
+    return await this.dao.getProducts(data);
   };
   getById = async (id) => {
     return await this.dao.getProductById(id);
@@ -18,7 +16,8 @@ export default class ProductRepository {
     return await this.dao.addProduct(newProduct);
   };
   update = async (id, data) => {
-    this.dao.updateProduct(id, data);
+    const update = new ProductDTO(data);
+    this.dao.updateProduct(id, update);
   };
 
   delete = async (id) => {
