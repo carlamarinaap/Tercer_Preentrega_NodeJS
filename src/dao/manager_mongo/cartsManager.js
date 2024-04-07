@@ -1,5 +1,11 @@
+import { Error } from "mongoose";
 import CartSchema from "../models/cart.schema.js";
 import express from "express";
+import cartSchema from "../models/cart.schema.js";
+import ticketSchema from "../models/ticket.schema.js";
+import { productService } from "../../repositories/index.js";
+import moment from "moment";
+import userSchema from "../models/user.schema.js";
 
 const router = express.Router();
 
@@ -95,6 +101,42 @@ class CartsManager {
       await CartSchema.updateOne({ _id: cartId }, { $set: { products: [] } });
     } catch (error) {
       throw new Error(`Error al eliminar los productos del carrito ${error.message}`);
+    }
+  };
+
+  purchase = async (cartId) => {
+    try {
+      const cart = await cartSchema.findById(cartId);
+      const user = await userSchema.findOne({ cart: cartId });
+      const cartJSON = JSON.parse(JSON.stringify(cart));
+      const avaiableCart = cartJSON.products.filter(async (prod) => {
+        const product = await productService.getById(prod.product);
+        prod.quantity <= product.stock;
+      });
+      let amount = 0;
+      await Promise.all(
+        avaiableCart.map(async (prod) => {
+          const product = await productService.getById(prod.product);
+          amount = amount + prod.quantity * product.price;
+        })
+      );
+      let data = {
+        purchase_datetime: moment().format("YYYYMMDDHHmmss"),
+        purchaser: user.email,
+        amount: amount,
+      };
+      avaiableCart.forEach(async (prod) => {
+        const product = await productService.getById(prod.product);
+        delete product.code;
+        product.stock = product.stock - prod.quantity;
+        productService.update(prod.product, product);
+        this.deleteProduct(cartId, prod.product);
+      });
+      // Generar el ticket:
+      const ticket = new ticketSchema(data).save();
+      return ticket;
+    } catch (error) {
+      throw new Error(`Error al realizar la compra ${error.message}`);
     }
   };
 }

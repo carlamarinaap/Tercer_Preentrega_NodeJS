@@ -74,10 +74,10 @@ export async function updateProductsQuantityInCart(req, res) {
 }
 
 export async function purchase(req, res) {
-  /*
-  la cual permitirá finalizar el proceso de compra de dicho carrito. 
-  Debe corroborar el stock del producto al momento de finalizarse
-Si el producto tiene suficiente stock para la cantidad indicada en el producto del carrito, entonces restarlo del stock del producto y continuar.
-Si el producto no tiene suficiente stock para la cantidad indicada en el producto del carrito, entonces no agregar el producto al proceso de compra. 
- */
+  try {
+    await cm.purchase(req.params.cid);
+    res.status(200).send("Compra realizada con éxito");
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
 }

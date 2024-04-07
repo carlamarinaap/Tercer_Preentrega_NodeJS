@@ -53,12 +53,15 @@ export async function chat(req, res) {
 
 export async function getUserCart(req, res) {
   try {
+    const cartId = req.params.cid;
     const cart = await cm.getCartById(req.params.cid);
     const cartJSON = JSON.parse(JSON.stringify(cart));
+    let amount = 0;
     cartJSON.products.forEach((prod) => {
       prod.total = prod.quantity * prod.product.price;
+      amount = amount + prod.quantity * prod.product.price;
     });
-    res.render("inCart", { cartJSON });
+    res.render("inCart", { cartJSON, cartId, amount });
   } catch (error) {
     res.status(500).send(error.messages);
   }
@@ -112,15 +115,15 @@ export async function loginView(req, res) {
 
 export async function profileView(req, res) {
   let user, isAdmin;
-  const userId = jwt.verify(req.signedCookies.jwt, config.privateKey).id;
-  if (userId === 1) {
-    user = config.userAdmin;
-    isAdmin = true;
-  } else {
-    user = await userSchema.findById(userId);
-    isAdmin = false;
-  }
   if (req.signedCookies.jwt) {
+    const userId = jwt.verify(req.signedCookies.jwt, config.privateKey).id;
+    if (userId === 1) {
+      user = config.userAdmin;
+      isAdmin = true;
+    } else {
+      user = await userSchema.findById(userId);
+      isAdmin = false;
+    }
     res.render("profile", { user, isAdmin });
   } else {
     let msg = "Inicie sesión para ver su perfil";
